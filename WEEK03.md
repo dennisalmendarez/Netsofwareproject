@@ -134,10 +134,12 @@ Users can remove anime or movie entries from their watchlist.
 # Project Links
 
 ## GitHub Repository
-(Add GitHub repository link here)
+https://github.com/dennisalmendarez/Netsofwareproject
 
 ## Trello Board
-(Add Trello board link here)
+https://trello.com/b/1UBgMllF/anime-and-movies-tracker
+
+- will add requirements as they come up
 
 ---
 
