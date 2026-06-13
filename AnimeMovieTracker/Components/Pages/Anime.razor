@@ -77,7 +77,10 @@ else
             <img src="@selectedAnime.ImageUrl" alt="@selectedAnime.Title cover" class="modal-poster" />
 
             <p><strong>Score:</strong> @(selectedAnime.Rating == 0 ? "N/A" : $"{selectedAnime.Rating * 10:0} / 100")</p>
-            <p><strong>Status:</strong> @selectedAnime.Status</p>
+            @if (!string.IsNullOrWhiteSpace(selectedAnime.Status))
+            {
+                <p><strong>Status:</strong> @selectedAnime.Status</p>
+            }
             <p><strong>Year:</strong> @(selectedAnime.Year == 0 ? "N/A" : selectedAnime.Year)</p>
             <p><strong>Genres:</strong> @selectedAnime.Genre</p>
 

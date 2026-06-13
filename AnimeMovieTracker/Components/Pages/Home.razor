@@ -46,7 +46,7 @@ else
         <div class="horizontal-scroll">
             @foreach (var anime in animePreview)
             {
-                <div class="mini-card">
+                <div class="mini-card" @onclick="() => OpenAnimeDetails(anime)">
                     <img src="@anime.ImageUrl" alt="@anime.Title poster" />
                     <h3>@anime.Title</h3>
                     <p>@anime.Genre</p>
@@ -64,7 +64,7 @@ else
         <div class="horizontal-scroll">
             @foreach (var movie in moviePreview)
             {
-                <div class="mini-card">
+                <div class="mini-card" @onclick="() => OpenMovieDetails(movie)">
                     <img src="@movie.ImageUrl" alt="@movie.Title poster" />
                     <h3>@movie.Title</h3>
                     <p>@(movie.VoteAverage == 0 ? "No Rating" : $"{movie.VoteAverage:0.0}/10")</p>
@@ -82,12 +82,23 @@ else
 
             <h2>@selectedAnime.Title</h2>
 
+            <button class="favorite-btn-modal" @onclick="ToggleSelectedAnimeFavorite">
+                @(selectedAnime.IsFavorite ? "Remove from Favorites ❤️" : "Add to Favorites 🤍")
+            </button>
+
             <img src="@selectedAnime.ImageUrl" alt="@selectedAnime.Title poster" class="modal-poster" />
 
             <p><strong>Score:</strong> @(selectedAnime.Rating == 0 ? "N/A" : $"{selectedAnime.Rating * 10:0} / 100")</p>
             <p><strong>Year:</strong> @(selectedAnime.Year == 0 ? "N/A" : selectedAnime.Year)</p>
             <p><strong>Genre:</strong> @selectedAnime.Genre</p>
             <p><strong>Status:</strong> @selectedAnime.Status</p>
+
+            <div class="status-buttons">
+                <button @onclick='() => SetAnimeStatus("Watching")'>Watching</button>
+                <button @onclick='() => SetAnimeStatus("Want to Watch")'>Want to Watch</button>
+                <button @onclick='() => SetAnimeStatus("Watched")'>Watched</button>
+                <button @onclick='() => SetAnimeStatus("Dropped")'>Dropped</button>
+            </div>
 
             <hr class="modal-clear" />
 
@@ -131,11 +142,22 @@ else
 
             <h2>@selectedMovie.Title</h2>
 
+            <button class="favorite-btn-modal" @onclick="ToggleSelectedMovieFavorite">
+                @(selectedMovie.IsFavorite ? "Remove from Favorites ❤️" : "Add to Favorites 🤍")
+            </button>
+
             <img src="@selectedMovie.ImageUrl" alt="@selectedMovie.Title poster" class="modal-poster" />
 
             <p><strong>Score:</strong> @(selectedMovie.VoteAverage == 0 ? "N/A" : $"{selectedMovie.VoteAverage:0.0} / 10")</p>
             <p><strong>Release:</strong> @(string.IsNullOrWhiteSpace(selectedMovie.ReleaseDate) ? "N/A" : selectedMovie.ReleaseDate)</p>
             <p><strong>Status:</strong> @selectedMovie.Status</p>
+
+            <div class="status-buttons">
+                <button @onclick='() => SetMovieStatus("Watching")'>Watching</button>
+                <button @onclick='() => SetMovieStatus("Want to Watch")'>Want to Watch</button>
+                <button @onclick='() => SetMovieStatus("Watched")'>Watched</button>
+                <button @onclick='() => SetMovieStatus("Dropped")'>Dropped</button>
+            </div>
 
             <hr class="modal-clear" />
 
@@ -194,6 +216,26 @@ else
         isLoading = false;
     }
 
+    private async Task OpenAnimeDetails(MediaItem anime)
+    {
+        selectedAnime = anime;
+        showAnimeModal = true;
+
+        isLoadingAnimeCharacters = true;
+        animeCharacters = await AniListService.GetAnimeCharactersAsync(anime.Id);
+        isLoadingAnimeCharacters = false;
+    }
+
+    private async Task OpenMovieDetails(TmdbMovie movie)
+    {
+        selectedMovie = movie;
+        showMovieModal = true;
+
+        isLoadingMovieCast = true;
+        movieCast = await MovieService.GetMovieCastAsync(movie.Id);
+        isLoadingMovieCast = false;
+    }
+
     private async Task OpenRandomAnime()
     {
         var result = await AniListService.GetAnimePageAsync(
@@ -202,30 +244,20 @@ else
             sort: "POPULARITY_DESC"
         );
 
-        if (result.Items.Count == 0)
-            return;
-
-        selectedAnime = result.Items.First();
-        showAnimeModal = true;
-
-        isLoadingAnimeCharacters = true;
-        animeCharacters = await AniListService.GetAnimeCharactersAsync(selectedAnime.Id);
-        isLoadingAnimeCharacters = false;
+        if (result.Items.Count > 0)
+        {
+            await OpenAnimeDetails(result.Items.First());
+        }
     }
 
     private async Task OpenRandomMovie()
     {
         var movie = await MovieService.GetRandomMovieAsync();
 
-        if (movie is null)
-            return;
-
-        selectedMovie = movie;
-        showMovieModal = true;
-
-        isLoadingMovieCast = true;
-        movieCast = await MovieService.GetMovieCastAsync(movie.Id);
-        isLoadingMovieCast = false;
+        if (movie is not null)
+        {
+            await OpenMovieDetails(movie);
+        }
     }
 
     private void CloseAnimeModal()
@@ -240,6 +272,38 @@ else
         showMovieModal = false;
         selectedMovie = null;
         movieCast.Clear();
+    }
+
+    private void ToggleSelectedAnimeFavorite()
+    {
+        if (selectedAnime is not null)
+        {
+            selectedAnime.IsFavorite = !selectedAnime.IsFavorite;
+        }
+    }
+
+    private void ToggleSelectedMovieFavorite()
+    {
+        if (selectedMovie is not null)
+        {
+            selectedMovie.IsFavorite = !selectedMovie.IsFavorite;
+        }
+    }
+
+    private void SetAnimeStatus(string status)
+    {
+        if (selectedAnime is not null)
+        {
+            selectedAnime.Status = status;
+        }
+    }
+
+    private void SetMovieStatus(string status)
+    {
+        if (selectedMovie is not null)
+        {
+            selectedMovie.Status = status;
+        }
     }
 
     private string CleanDescription(string? description)

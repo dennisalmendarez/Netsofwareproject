@@ -24,7 +24,7 @@ public class TmdbMovie
 
     public bool IsFavorite { get; set; }
 
-    public string Status { get; set; } = "Want to Watch";
+    public string Status { get; set; } = "";
 
     public string ImageUrl =>
         string.IsNullOrEmpty(PosterPath)

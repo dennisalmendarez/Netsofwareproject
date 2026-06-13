@@ -50,8 +50,13 @@ else
 
                 <p>
                     <strong>Score:</strong> @(movie.VoteAverage == 0 ? "N/A" : $"{movie.VoteAverage:0.0} / 10")<br />
-                    <strong>Release:</strong> @(string.IsNullOrWhiteSpace(movie.ReleaseDate) ? "N/A" : movie.ReleaseDate)<br />
-                    <strong>Status:</strong> @movie.Status
+                    <strong>Release:</strong> @(string.IsNullOrWhiteSpace(movie.ReleaseDate) ? "N/A" : movie.ReleaseDate)
+                    @if (!string.IsNullOrWhiteSpace(movie.Status))
+                    {
+                        <br />
+                        <strong>Status:</strong> 
+                        @movie.Status
+                    }
                 </p>
 
                 <div class="status-buttons" @onclick:stopPropagation="true">
@@ -95,7 +100,7 @@ else
             <p><strong>Score:</strong> @(selectedMovie.VoteAverage == 0 ? "N/A" : $"{selectedMovie.VoteAverage:0.0} / 10")
             </p>
             <p><strong>Release:</strong> @(string.IsNullOrWhiteSpace(selectedMovie.ReleaseDate) ? "N/A" :
-                                                                                                                            selectedMovie.ReleaseDate)</p>
+                                                                                                                                                            selectedMovie.ReleaseDate)</p>
                 <p><strong>Status:</strong> @selectedMovie.Status</p>
 
                 <hr class="modal-clear" />

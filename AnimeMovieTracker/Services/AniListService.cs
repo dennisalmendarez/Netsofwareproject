@@ -88,7 +88,7 @@ public class AniListService
                 Rating = (a.AverageScore ?? 0) / 10.0,
                 ImageUrl = a.CoverImage?.Large ?? "",
                 Description = a.Description ?? "",
-                Status = "Want to Watch"
+                Status = ""
             }).ToList() ?? new List<MediaItem>();
 
         return new AnimePageResult
