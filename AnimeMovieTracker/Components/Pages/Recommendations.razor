@@ -1,0 +1,35 @@
+@page "/recommendations"
+@using AnimeMovieTracker.Components.Models
+@using AnimeMovieTracker.Components.Shared
+@rendermode InteractiveServer
+
+<PageTitle>Recommendations</PageTitle>
+
+<h1>Recommendations</h1>
+
+<button class="dice-button" @onclick="PickRandom">🎲 Random Pick</button>
+
+@if (randomItem is not null)
+{
+    <h2>Your Random Recommendation</h2>
+    <MediaCard Item="randomItem" />
+}
+
+<h2>Top Rated</h2>
+
+<div class="media-grid">
+    @foreach (var item in SampleData.Items.OrderByDescending(x => x.Rating).Take(10))
+    {
+        <MediaCard Item="item" />
+    }
+</div>
+
+@code {
+    private MediaItem? randomItem;
+
+    private void PickRandom()
+    {
+        var random = new Random();
+        randomItem = SampleData.Items[random.Next(SampleData.Items.Count)];
+    }
+}

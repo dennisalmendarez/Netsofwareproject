@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "5P1aHY3ECRM=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\Denni\\Documents\\BYU 2026\\Netsofwareproject\\AnimeMovieTracker\\AnimeMovieTracker.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Denni\\.nuget\\packages\\microsoft.aspnetcore.app.internal.assets\\10.0.7\\microsoft.aspnetcore.app.internal.assets.10.0.7.nupkg.sha512"
+  ],
+  "logs": []
+}

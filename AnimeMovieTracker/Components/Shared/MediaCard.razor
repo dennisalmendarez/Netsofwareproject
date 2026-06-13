@@ -1,0 +1,44 @@
+@using AnimeMovieTracker.Components.Models
+
+<div class="anime-info">
+    <div class="card-header">
+        <h3>@Item.Title</h3>
+
+        <span class="favorite-icon"
+              @onclick:stopPropagation="true"
+              @onclick="ToggleFavorite">
+            @(Item.IsFavorite ? "❤️" : "🤍")
+        </span>
+    </div>
+
+    <img src="@Item.ImageUrl" alt="@Item.Title cover" />
+
+    <p>
+        <strong>Score:</strong> @(Item.Rating == 0 ? "N/A" : $"{Item.Rating * 10:0} / 100")<br />
+        <strong>Genres:</strong> @Item.Genre<br />
+        <strong>Year:</strong> @(Item.Year == 0 ? "N/A" : Item.Year)<br />
+        <strong>Status:</strong> @Item.Status
+    </p>
+
+    <div class="status-buttons" @onclick:stopPropagation="true">
+        <button @onclick='() => SetStatus("Watching")'>Watching</button>
+        <button @onclick='() => SetStatus("Want to Watch")'>Want to Watch</button>
+        <button @onclick='() => SetStatus("Watched")'>Watched</button>
+        <button @onclick='() => SetStatus("Dropped")'>Dropped</button>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public MediaItem Item { get; set; } = new();
+
+    private void SetStatus(string status)
+    {
+        Item.Status = status;
+    }
+
+    private void ToggleFavorite()
+    {
+        Item.IsFavorite = !Item.IsFavorite;
+    }
+}
