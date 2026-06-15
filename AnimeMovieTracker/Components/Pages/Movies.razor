@@ -1,8 +1,10 @@
 @page "/movies"
 @rendermode InteractiveServer
 @using AnimeMovieTracker.Components.Models
+@using AnimeMovieTracker.Models
 @using AnimeMovieTracker.Services
 @inject MovieService MovieService
+@inject SavedMediaService SavedMediaService
 
 <PageTitle>Movies</PageTitle>
 
@@ -54,7 +56,7 @@ else
                     @if (!string.IsNullOrWhiteSpace(movie.Status))
                     {
                         <br />
-                        <strong>Status:</strong> 
+                        <strong>Status:</strong>
                         @movie.Status
                     }
                 </p>
@@ -100,7 +102,7 @@ else
             <p><strong>Score:</strong> @(selectedMovie.VoteAverage == 0 ? "N/A" : $"{selectedMovie.VoteAverage:0.0} / 10")
             </p>
             <p><strong>Release:</strong> @(string.IsNullOrWhiteSpace(selectedMovie.ReleaseDate) ? "N/A" :
-                                                                                                                                                            selectedMovie.ReleaseDate)</p>
+                                                                                                                                                                                            selectedMovie.ReleaseDate)</p>
                 <p><strong>Status:</strong> @selectedMovie.Status</p>
 
                 <hr class="modal-clear" />
@@ -178,10 +180,42 @@ else
         }
 
         movies = result.Items;
+        await ApplySavedStateToMovies();
+
         currentPage = result.CurrentPage;
         totalPages = result.TotalPages;
 
         isLoading = false;
+    }
+
+
+    private async Task ApplySavedStateToMovies()
+    {
+        var savedItems = await SavedMediaService.GetMyItemsAsync();
+
+        foreach (var movie in movies)
+        {
+            ApplySavedStateToMovie(movie, savedItems);
+        }
+    }
+
+    private async Task ApplySavedStateToMovie(TmdbMovie movie)
+    {
+        var savedItems = await SavedMediaService.GetMyItemsAsync();
+        ApplySavedStateToMovie(movie, savedItems);
+    }
+
+    private static void ApplySavedStateToMovie(TmdbMovie movie, List<SavedMediaItem> savedItems)
+    {
+        var saved = savedItems.FirstOrDefault(x =>
+            x.MediaId == movie.Id &&
+            x.MediaType == "Movie");
+
+        if (saved is null)
+            return;
+
+        movie.Status = saved.Status;
+        movie.IsFavorite = saved.IsFavorite;
     }
 
     private async Task SearchMovies()
@@ -233,6 +267,7 @@ else
 
         if (randomMovie is not null)
         {
+            await ApplySavedStateToMovie(randomMovie);
             await OpenMovieDetails(randomMovie);
         }
     }
@@ -254,13 +289,31 @@ else
         cast.Clear();
     }
 
-    private void ToggleFavorite(TmdbMovie movie)
+    private async Task ToggleFavorite(TmdbMovie movie)
     {
         movie.IsFavorite = !movie.IsFavorite;
+
+        await SavedMediaService.SaveOrUpdateItemAsync(
+            movie.Id,
+            "Movie",
+            movie.Title,
+            movie.ImageUrl,
+            movie.Status,
+            movie.IsFavorite
+        );
     }
 
-    private void SetStatus(TmdbMovie movie, string status)
+    private async Task SetStatus(TmdbMovie movie, string status)
     {
         movie.Status = status;
+
+        await SavedMediaService.SaveOrUpdateItemAsync(
+            movie.Id,
+            "Movie",
+            movie.Title,
+            movie.ImageUrl,
+            movie.Status,
+            movie.IsFavorite
+        );
     }
 }

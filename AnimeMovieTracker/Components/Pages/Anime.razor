@@ -1,9 +1,11 @@
 @page "/anime"
 @rendermode InteractiveServer
 @using AnimeMovieTracker.Components.Models
+@using AnimeMovieTracker.Models
 @using AnimeMovieTracker.Components.Shared
 @using AnimeMovieTracker.Services
 @inject AniListService AniListService
+@inject SavedMediaService SavedMediaService
 
 <PageTitle>Anime</PageTitle>
 
@@ -83,6 +85,12 @@ else
             }
             <p><strong>Year:</strong> @(selectedAnime.Year == 0 ? "N/A" : selectedAnime.Year)</p>
             <p><strong>Genres:</strong> @selectedAnime.Genre</p>
+            <div class="status-buttons">
+                <button @onclick='() => SetAnimeStatus("Watching")'>Watching</button>
+                <button @onclick='() => SetAnimeStatus("Want to Watch")'>Want to Watch</button>
+                <button @onclick='() => SetAnimeStatus("Watched")'>Watched</button>
+                <button @onclick='() => SetAnimeStatus("Dropped")'>Dropped</button>
+            </div>
 
             <hr class="modal-clear" />
 
@@ -162,10 +170,42 @@ else
         );
 
         animeList = result.Items;
+        await ApplySavedStateToAnime();
+
         currentPage = result.CurrentPage;
         hasNextPage = result.HasNextPage;
 
         isLoading = false;
+    }
+
+
+    private async Task ApplySavedStateToAnime()
+    {
+        var savedItems = await SavedMediaService.GetMyItemsAsync();
+
+        foreach (var anime in animeList)
+        {
+            ApplySavedStateToAnime(anime, savedItems);
+        }
+    }
+
+    private async Task ApplySavedStateToAnime(MediaItem anime)
+    {
+        var savedItems = await SavedMediaService.GetMyItemsAsync();
+        ApplySavedStateToAnime(anime, savedItems);
+    }
+
+    private static void ApplySavedStateToAnime(MediaItem anime, List<SavedMediaItem> savedItems)
+    {
+        var saved = savedItems.FirstOrDefault(x =>
+            x.MediaId == anime.Id &&
+            x.MediaType == "Anime");
+
+        if (saved is null)
+            return;
+
+        anime.Status = saved.Status;
+        anime.IsFavorite = saved.IsFavorite;
     }
 
     private async Task SearchAnime()
@@ -227,12 +267,21 @@ else
         characters.Clear();
     }
 
-    private void ToggleSelectedFavorite()
+    private async Task ToggleSelectedFavorite()
     {
-        if (selectedAnime is not null)
-        {
-            selectedAnime.IsFavorite = !selectedAnime.IsFavorite;
-        }
+        if (selectedAnime is null)
+            return;
+
+        selectedAnime.IsFavorite = !selectedAnime.IsFavorite;
+
+        await SavedMediaService.SaveOrUpdateItemAsync(
+            selectedAnime.Id,
+            "Anime",
+            selectedAnime.Title,
+            selectedAnime.ImageUrl,
+            selectedAnime.Status,
+            selectedAnime.IsFavorite
+        );
     }
 
     private string CleanDescription(string description)
@@ -259,7 +308,26 @@ else
 
         if (result.Items.Count > 0)
         {
-            await OpenAnimeDetails(result.Items.First());
+            var randomAnime = result.Items.First();
+            await ApplySavedStateToAnime(randomAnime);
+            await OpenAnimeDetails(randomAnime);
         }
+    }
+
+    private async Task SetAnimeStatus(string status)
+    {
+        if (selectedAnime is null)
+            return;
+
+        selectedAnime.Status = status;
+
+        await SavedMediaService.SaveOrUpdateItemAsync(
+            selectedAnime.Id,
+            "Anime",
+            selectedAnime.Title,
+            selectedAnime.ImageUrl,
+            selectedAnime.Status,
+            selectedAnime.IsFavorite
+        );
     }
 }

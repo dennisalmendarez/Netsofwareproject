@@ -1,24 +1,41 @@
 @page "/login"
+@rendermode InteractiveServer
+@inject NavigationManager Navigation
 
 <PageTitle>Login</PageTitle>
 
 <div class="auth-container">
     <div class="auth-card">
         <h1>Login</h1>
-        <p>Access your anime and movie tracker account.</p>
+        <p>Access your saved anime and movies.</p>
 
-        <form>
+        @if (hasError)
+        {
+            <p class="validation-message">Invalid email or password.</p>
+        }
+
+        <form method="post" action="/auth/login">
             <label>Email</label>
-            <input type="email" placeholder="Enter your email" />
+            <input name="email" type="email" required />
 
             <label>Password</label>
-            <input type="password" placeholder="Enter your password" />
+            <input name="password" type="password" required />
 
-            <button type="button">Login</button>
+            <button type="submit">Login</button>
         </form>
 
         <p class="auth-link">
-            Don't have an account? <a href="/register">Register here</a>
+            Need an account? <a href="/register">Register</a>
         </p>
     </div>
 </div>
+
+@code {
+    private bool hasError;
+
+    protected override void OnInitialized()
+    {
+        var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
+        hasError = uri.Query.Contains("error=1");
+    }
+}

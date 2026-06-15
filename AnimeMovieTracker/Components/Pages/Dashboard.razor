@@ -1,6 +1,9 @@
 @page "/dashboard"
 @rendermode InteractiveServer
-@using AnimeMovieTracker.Components.Models
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using AnimeMovieTracker.Models
+@using AnimeMovieTracker.Services
+@inject SavedMediaService SavedMediaService
 
 <PageTitle>Dashboard</PageTitle>
 
@@ -9,246 +12,120 @@
 <section class="dashboard-hero">
     <div>
         <p class="eyebrow">Your Library</p>
-        <h2>Welcome back, Dennis</h2>
-        <p>Manage your anime, movies, favorites, watch status, and account settings.</p>
+        <h2>Welcome back</h2>
+        <p>Manage your anime, movies, favorites, watch status, and account.</p>
     </div>
 </section>
 
+<form method="post" action="/auth/logout" style="margin-bottom: 1rem;">
+    <button type="submit" class="random-button">Logout</button>
+</form>
+
 <div class="dashboard-tabs">
-    <button class="@(activeSection == "overview" ? "active-tab" : "")" @onclick='() => ChangeSection("overview")'>
-        Overview
-    </button>
-
-    <button class="@(activeSection == "watching" ? "active-tab" : "")" @onclick='() => ChangeSection("watching")'>
-        Watching
-    </button>
-
-    <button class="@(activeSection == "want" ? "active-tab" : "")" @onclick='() => ChangeSection("want")'>
-        Want to Watch
-    </button>
-
-    <button class="@(activeSection == "watched" ? "active-tab" : "")" @onclick='() => ChangeSection("watched")'>
-        Watched
-    </button>
-
-    <button class="@(activeSection == "dropped" ? "active-tab" : "")" @onclick='() => ChangeSection("dropped")'>
-        Dropped
-    </button>
-
-    <button class="@(activeSection == "favorites" ? "active-tab" : "")" @onclick='() => ChangeSection("favorites")'>
-        Favorites
-    </button>
-
-    <button class="@(activeSection == "account" ? "active-tab" : "")" @onclick='() => ChangeSection("account")'>
-        Account
-    </button>
+    <button class="@(activeSection == "overview" ? "active-tab" : "")" @onclick='() => ChangeSection("overview")'>Overview</button>
+    <button class="@(activeSection == "watching" ? "active-tab" : "")" @onclick='() => ChangeSection("watching")'>Watching</button>
+    <button class="@(activeSection == "want" ? "active-tab" : "")" @onclick='() => ChangeSection("want")'>Want to Watch</button>
+    <button class="@(activeSection == "watched" ? "active-tab" : "")" @onclick='() => ChangeSection("watched")'>Watched</button>
+    <button class="@(activeSection == "dropped" ? "active-tab" : "")" @onclick='() => ChangeSection("dropped")'>Dropped</button>
+    <button class="@(activeSection == "favorites" ? "active-tab" : "")" @onclick='() => ChangeSection("favorites")'>Favorites</button>
+    <button class="@(activeSection == "account" ? "active-tab" : "")" @onclick='() => ChangeSection("account")'>Account</button>
 </div>
 
-@if (activeSection == "overview")
+@if (isLoading)
+{
+    <p>Loading dashboard...</p>
+}
+else if (activeSection == "overview")
 {
     <section class="dashboard-grid">
-        <div class="dashboard-card">
-            <h2>@WatchingItems.Count</h2>
-            <p>Watching</p>
-        </div>
-
-        <div class="dashboard-card">
-            <h2>@WantToWatchItems.Count</h2>
-            <p>Want to Watch</p>
-        </div>
-
-        <div class="dashboard-card">
-            <h2>@WatchedItems.Count</h2>
-            <p>Watched</p>
-        </div>
-
-        <div class="dashboard-card">
-            <h2>@DroppedItems.Count</h2>
-            <p>Dropped</p>
-        </div>
-
-        <div class="dashboard-card">
-            <h2>@FavoriteItems.Count</h2>
-            <p>Favorites</p>
-        </div>
-
-        <div class="dashboard-card">
-            <h2>@AllItems.Count</h2>
-            <p>Total Saved</p>
-        </div>
+        <div class="dashboard-card"><h2>@WatchingItems.Count</h2><p>Watching</p></div>
+        <div class="dashboard-card"><h2>@WantToWatchItems.Count</h2><p>Want to Watch</p></div>
+        <div class="dashboard-card"><h2>@WatchedItems.Count</h2><p>Watched</p></div>
+        <div class="dashboard-card"><h2>@DroppedItems.Count</h2><p>Dropped</p></div>
+        <div class="dashboard-card"><h2>@FavoriteItems.Count</h2><p>Favorites</p></div>
+        <div class="dashboard-card"><h2>@AllItems.Count</h2><p>Total Saved</p></div>
     </section>
 
-    <section class="dashboard-panel">
-        <h2>Recent Activity</h2>
-
-        @if (AllItems.Count == 0)
-        {
-            <p class="no-results">No saved activity yet. Start tracking anime and movies to fill your dashboard.</p>
-        }
-        else
-        {
-            <div class="dashboard-list">
-                @foreach (var item in AllItems.Take(5))
-                {
-                    <div class="dashboard-list-item">
-                        <img src="@item.ImageUrl" alt="@item.Title poster" />
-                        <div>
-                            <h3>@item.Title</h3>
-                            <p>@item.Type • @(string.IsNullOrWhiteSpace(item.Status) ? "No Status" : item.Status)</p>
-                        </div>
-                    </div>
-                }
-            </div>
-        }
-    </section>
+    <DashboardList Title="Recent Saved Items" Items="AllItems.Take(6).ToList()" OnDelete="DeleteItem" OnFavorite="ToggleFavorite" OnStatus="UpdateStatus" />
 }
 else if (activeSection == "watching")
 {
-    <DashboardSection Title="Watching" Items="WatchingItems" />
+    <DashboardList Title="Watching" Items="WatchingItems" OnDelete="DeleteItem" OnFavorite="ToggleFavorite" OnStatus="UpdateStatus" />
 }
 else if (activeSection == "want")
 {
-    <DashboardSection Title="Want to Watch" Items="WantToWatchItems" />
+    <DashboardList Title="Want to Watch" Items="WantToWatchItems" OnDelete="DeleteItem" OnFavorite="ToggleFavorite" OnStatus="UpdateStatus" />
 }
 else if (activeSection == "watched")
 {
-    <DashboardSection Title="Watched" Items="WatchedItems" />
+    <DashboardList Title="Watched" Items="WatchedItems" OnDelete="DeleteItem" OnFavorite="ToggleFavorite" OnStatus="UpdateStatus" />
 }
 else if (activeSection == "dropped")
 {
-    <DashboardSection Title="Dropped" Items="DroppedItems" />
+    <DashboardList Title="Dropped" Items="DroppedItems" OnDelete="DeleteItem" OnFavorite="ToggleFavorite" OnStatus="UpdateStatus" />
 }
 else if (activeSection == "favorites")
 {
-    <DashboardSection Title="Favorites" Items="FavoriteItems" />
+    <DashboardList Title="Favorites" Items="FavoriteItems" OnDelete="DeleteItem" OnFavorite="ToggleFavorite" OnStatus="UpdateStatus" />
 }
 else if (activeSection == "account")
 {
     <section class="dashboard-panel">
-        <h2>Account Settings</h2>
+        <h2>Account</h2>
+        <p>This account section is connected to authentication. Profile editing can be added later.</p>
 
-        <div class="account-grid">
-            <div class="account-card">
-                <h3>Profile</h3>
-                <label>Display Name</label>
-                <input value="Dennis" />
-
-                <label>Email</label>
-                <input value="dennis@example.com" />
-
-                <button class="filter-button">Save Profile</button>
-            </div>
-
-            <div class="account-card">
-                <h3>Preferences</h3>
-
-                <label>Default Media Type</label>
-                <select>
-                    <option>Anime and Movies</option>
-                    <option>Anime Only</option>
-                    <option>Movies Only</option>
-                </select>
-
-                <label>Favorite Genre</label>
-                <select>
-                    <option>Action</option>
-                    <option>Adventure</option>
-                    <option>Comedy</option>
-                    <option>Drama</option>
-                    <option>Sci-Fi</option>
-                </select>
-
-                <button class="filter-button">Save Preferences</button>
-            </div>
-
-            <div class="account-card danger-zone">
-                <h3>Account Actions</h3>
-                <p>This area will connect to real authentication later.</p>
-
-                <button class="random-button">Log Out</button>
-                <button class="danger-button">Delete Account</button>
-            </div>
-        </div>
+        <form method="post" action="/auth/logout">
+            <button type="submit" class="random-button">Logout</button>
+        </form>
     </section>
 }
 
 @code {
     private string activeSection = "overview";
+    private bool isLoading = true;
+    private List<SavedMediaItem> AllItems = new();
 
-    // Temporary front-end demo data.
-    // Later this will come from the database for the logged-in user.
-    private List<DashboardMediaItem> AllItems = new()
+    private List<SavedMediaItem> WatchingItems => AllItems.Where(x => StatusMatches(x, "Watching")).ToList();
+    private List<SavedMediaItem> WantToWatchItems => AllItems.Where(x => StatusMatches(x, "Want to Watch")).ToList();
+    private List<SavedMediaItem> WatchedItems => AllItems.Where(x => StatusMatches(x, "Watched")).ToList();
+    private List<SavedMediaItem> DroppedItems => AllItems.Where(x => StatusMatches(x, "Dropped")).ToList();
+    private List<SavedMediaItem> FavoriteItems => AllItems.Where(x => x.IsFavorite).ToList();
+
+    private static bool StatusMatches(SavedMediaItem item, string status) =>
+        string.Equals(item.Status?.Trim(), status, StringComparison.OrdinalIgnoreCase);
+
+    protected override async Task OnInitializedAsync()
     {
-        new DashboardMediaItem
-        {
-            Id = 101922,
-            Title = "Demon Slayer",
-            Type = "Anime",
-            Genre = "Action",
-            Status = "Watching",
-            IsFavorite = true,
-            ImageUrl = "https://placehold.co/300x450?text=Demon+Slayer"
-        },
-        new DashboardMediaItem
-        {
-            Id = 151807,
-            Title = "Solo Leveling",
-            Type = "Anime",
-            Genre = "Fantasy",
-            Status = "Want to Watch",
-            IsFavorite = true,
-            ImageUrl = "https://placehold.co/300x450?text=Solo+Leveling"
-        },
-        new DashboardMediaItem
-        {
-            Id = 157336,
-            Title = "Interstellar",
-            Type = "Movie",
-            Genre = "Sci-Fi",
-            Status = "Watched",
-            IsFavorite = false,
-            ImageUrl = "https://placehold.co/300x450?text=Interstellar"
-        },
-        new DashboardMediaItem
-        {
-            Id = 155,
-            Title = "The Dark Knight",
-            Type = "Movie",
-            Genre = "Action",
-            Status = "Dropped",
-            IsFavorite = false,
-            ImageUrl = "https://placehold.co/300x450?text=Dark+Knight"
-        }
-    };
+        await LoadItems();
+    }
 
-    private List<DashboardMediaItem> WatchingItems =>
-        AllItems.Where(x => x.Status == "Watching").ToList();
-
-    private List<DashboardMediaItem> WantToWatchItems =>
-        AllItems.Where(x => x.Status == "Want to Watch").ToList();
-
-    private List<DashboardMediaItem> WatchedItems =>
-        AllItems.Where(x => x.Status == "Watched").ToList();
-
-    private List<DashboardMediaItem> DroppedItems =>
-        AllItems.Where(x => x.Status == "Dropped").ToList();
-
-    private List<DashboardMediaItem> FavoriteItems =>
-        AllItems.Where(x => x.IsFavorite).ToList();
+    private async Task LoadItems()
+    {
+        isLoading = true;
+        AllItems = await SavedMediaService.GetMyItemsAsync();
+        isLoading = false;
+    }
 
     private void ChangeSection(string section)
     {
         activeSection = section;
     }
 
-    public class DashboardMediaItem
+    private async Task DeleteItem(int id)
     {
-        public int Id { get; set; }
-        public string Title { get; set; } = "";
-        public string Type { get; set; } = "";
-        public string Genre { get; set; } = "";
-        public string Status { get; set; } = "";
-        public bool IsFavorite { get; set; }
-        public string ImageUrl { get; set; } = "";
+        await SavedMediaService.DeleteItemAsync(id);
+        await LoadItems();
+    }
+
+    private async Task ToggleFavorite(int id)
+    {
+        await SavedMediaService.ToggleFavoriteAsync(id);
+        await LoadItems();
+    }
+
+    private async Task UpdateStatus((int id, string status) data)
+    {
+        await SavedMediaService.UpdateStatusAsync(data.id, data.status);
+        await LoadItems();
     }
 }

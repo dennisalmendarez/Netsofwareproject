@@ -1,30 +1,83 @@
 @page "/register"
+@rendermode InteractiveServer
+@using System.ComponentModel.DataAnnotations
+@using AnimeMovieTracker.Models
+@using Microsoft.AspNetCore.Identity
+@inject UserManager<ApplicationUser> UserManager
+@inject NavigationManager Navigation
 
 <PageTitle>Register</PageTitle>
 
 <div class="auth-container">
     <div class="auth-card">
-        <h1>Register</h1>
-        <p>Create an account to save your watchlist.</p>
+        <h1>Create Account</h1>
+        <p>Start saving your anime and movie watchlist.</p>
 
-        <form>
-            <label>Username</label>
-            <input type="text" placeholder="Choose a username" />
+        <EditForm Model="registerModel" OnValidSubmit="RegisterUser">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
 
             <label>Email</label>
-            <input type="email" placeholder="Enter your email" />
+            <InputText @bind-Value="registerModel.Email" />
 
             <label>Password</label>
-            <input type="password" placeholder="Create a password" />
+            <InputText type="password" @bind-Value="registerModel.Password" />
 
             <label>Confirm Password</label>
-            <input type="password" placeholder="Confirm your password" />
+            <InputText type="password" @bind-Value="registerModel.ConfirmPassword" />
 
-            <button type="button">Create Account</button>
-        </form>
+            @if (!string.IsNullOrWhiteSpace(errorMessage))
+            {
+                <p class="validation-message">@errorMessage</p>
+            }
+
+            <button type="submit">Register</button>
+        </EditForm>
 
         <p class="auth-link">
-            Already have an account? <a href="/login">Login here</a>
+            Already have an account? <a href="/login">Login</a>
         </p>
     </div>
 </div>
+
+@code {
+    private RegisterModel registerModel = new();
+    private string errorMessage = "";
+
+    private async Task RegisterUser()
+    {
+        errorMessage = "";
+
+        var user = new ApplicationUser
+        {
+            UserName = registerModel.Email,
+            Email = registerModel.Email
+        };
+
+        var result = await UserManager.CreateAsync(user, registerModel.Password);
+
+        if (result.Succeeded)
+        {
+            Navigation.NavigateTo("/login");
+        }
+        else
+        {
+            errorMessage = string.Join(" ", result.Errors.Select(e => e.Description));
+        }
+    }
+
+    public class RegisterModel
+    {
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; } = "";
+
+        [Required]
+        [MinLength(6)]
+        public string Password { get; set; } = "";
+
+        [Required]
+        [Compare(nameof(Password), ErrorMessage = "Passwords do not match.")]
+        public string ConfirmPassword { get; set; } = "";
+    }
+}

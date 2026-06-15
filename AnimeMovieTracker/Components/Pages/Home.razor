@@ -1,10 +1,12 @@
 ﻿@page "/"
 @rendermode InteractiveServer
 @using AnimeMovieTracker.Components.Models
+@using AnimeMovieTracker.Models
 @using AnimeMovieTracker.Services
 @inject AniListService AniListService
 @inject MovieService MovieService
 @inject NavigationManager Navigation
+@inject SavedMediaService SavedMediaService
 
 <PageTitle>Anime & Movie Tracker</PageTitle>
 
@@ -213,6 +215,8 @@ else
         animePreview = animeResult.Items.Take(10).ToList();
         moviePreview = movieResult.Items.Take(10).ToList();
 
+        await ApplySavedStateToHomeItems();
+
         isLoading = false;
     }
 
@@ -246,7 +250,9 @@ else
 
         if (result.Items.Count > 0)
         {
-            await OpenAnimeDetails(result.Items.First());
+            var randomAnime = result.Items.First();
+            await ApplySavedStateToAnime(randomAnime);
+            await OpenAnimeDetails(randomAnime);
         }
     }
 
@@ -256,6 +262,7 @@ else
 
         if (movie is not null)
         {
+            await ApplySavedStateToMovie(movie);
             await OpenMovieDetails(movie);
         }
     }
@@ -274,36 +281,125 @@ else
         movieCast.Clear();
     }
 
-    private void ToggleSelectedAnimeFavorite()
+    private async Task ApplySavedStateToHomeItems()
     {
-        if (selectedAnime is not null)
+        var savedItems = await SavedMediaService.GetMyItemsAsync();
+
+        foreach (var anime in animePreview)
         {
-            selectedAnime.IsFavorite = !selectedAnime.IsFavorite;
+            ApplySavedStateToAnime(anime, savedItems);
+        }
+
+        foreach (var movie in moviePreview)
+        {
+            ApplySavedStateToMovie(movie, savedItems);
         }
     }
 
-    private void ToggleSelectedMovieFavorite()
+    private async Task ApplySavedStateToAnime(MediaItem anime)
     {
-        if (selectedMovie is not null)
-        {
-            selectedMovie.IsFavorite = !selectedMovie.IsFavorite;
-        }
+        var savedItems = await SavedMediaService.GetMyItemsAsync();
+        ApplySavedStateToAnime(anime, savedItems);
     }
 
-    private void SetAnimeStatus(string status)
+    private async Task ApplySavedStateToMovie(TmdbMovie movie)
     {
-        if (selectedAnime is not null)
-        {
-            selectedAnime.Status = status;
-        }
+        var savedItems = await SavedMediaService.GetMyItemsAsync();
+        ApplySavedStateToMovie(movie, savedItems);
     }
 
-    private void SetMovieStatus(string status)
+    private static void ApplySavedStateToAnime(MediaItem anime, List<SavedMediaItem> savedItems)
     {
-        if (selectedMovie is not null)
-        {
-            selectedMovie.Status = status;
-        }
+        var saved = savedItems.FirstOrDefault(x =>
+            x.MediaId == anime.Id &&
+            x.MediaType == "Anime");
+
+        if (saved is null)
+            return;
+
+        anime.Status = saved.Status;
+        anime.IsFavorite = saved.IsFavorite;
+    }
+
+    private static void ApplySavedStateToMovie(TmdbMovie movie, List<SavedMediaItem> savedItems)
+    {
+        var saved = savedItems.FirstOrDefault(x =>
+            x.MediaId == movie.Id &&
+            x.MediaType == "Movie");
+
+        if (saved is null)
+            return;
+
+        movie.Status = saved.Status;
+        movie.IsFavorite = saved.IsFavorite;
+    }
+
+    private async Task ToggleSelectedAnimeFavorite()
+    {
+        if (selectedAnime is null)
+            return;
+
+        selectedAnime.IsFavorite = !selectedAnime.IsFavorite;
+
+        await SavedMediaService.SaveOrUpdateItemAsync(
+            selectedAnime.Id,
+            "Anime",
+            selectedAnime.Title,
+            selectedAnime.ImageUrl,
+            selectedAnime.Status,
+            selectedAnime.IsFavorite
+        );
+    }
+
+    private async Task ToggleSelectedMovieFavorite()
+    {
+        if (selectedMovie is null)
+            return;
+
+        selectedMovie.IsFavorite = !selectedMovie.IsFavorite;
+
+        await SavedMediaService.SaveOrUpdateItemAsync(
+            selectedMovie.Id,
+            "Movie",
+            selectedMovie.Title,
+            selectedMovie.ImageUrl,
+            selectedMovie.Status,
+            selectedMovie.IsFavorite
+        );
+    }
+
+    private async Task SetAnimeStatus(string status)
+    {
+        if (selectedAnime is null)
+            return;
+
+        selectedAnime.Status = status;
+
+        await SavedMediaService.SaveOrUpdateItemAsync(
+            selectedAnime.Id,
+            "Anime",
+            selectedAnime.Title,
+            selectedAnime.ImageUrl,
+            selectedAnime.Status,
+            selectedAnime.IsFavorite
+        );
+    }
+
+    private async Task SetMovieStatus(string status)
+    {
+        if (selectedMovie is null)
+            return;
+
+        selectedMovie.Status = status;
+
+        await SavedMediaService.SaveOrUpdateItemAsync(
+            selectedMovie.Id,
+            "Movie",
+            selectedMovie.Title,
+            selectedMovie.ImageUrl,
+            selectedMovie.Status,
+            selectedMovie.IsFavorite
+        );
     }
 
     private string CleanDescription(string? description)
